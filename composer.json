@@ -19,15 +19,25 @@
     ],
     "require": {
         "php": "^8.4|^8.5|^8.6",
+        "ext-posi": "^0.8.0",
+        "gpio/contracts": "^0.8.0",
+        "gpio/digital": "^0.8.0",
+        "gpio/i2c": "^0.8.0",
+        "gpio/nuts-and-bolts": "^0.8.0",
+        "gpio/pwm": "^0.8.0",
+        "gpio/spi": "^0.8.0",
+        "gpio/uart": "^0.8.0",
         "microscrap/gpio": "^0.8.0",
         "microscrap/i2c": "^0.8.0",
         "microscrap/posix": "^0.8.0",
         "microscrap/spi": "^0.8.0",
         "microscrap/uart": "^0.8.0",
-        "scrapyard-io/framework": "^0.8.0"
+        "venusian-voyager/nuts-and-bolts": "^0.8.0"
     },
     "require-dev": {
-        "pestphp/pest": "^4"
+        "pestphp/pest": "^4",
+        "venusian-voyager/config": "^0.8.0",
+        "venusian-voyager/vessel": "^0.8.0"
     },
     "autoload": {
         "psr-4": {
@@ -58,12 +68,76 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "repositories": [
-        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/scrapyard-io/framework", "options": { "symlink": true } },
-        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/venusian/framework", "options": { "symlink": true } },
-        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/posix", "options": { "symlink": true } },
-        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/gpio", "options": { "symlink": true } },
-        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/i2c", "options": { "symlink": true } },
-        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/spi", "options": { "symlink": true } },
-        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/uart", "options": { "symlink": true } }
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/scrapyard-io/framework/src/GeneralPurposeIO/*",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "gpio/contracts": "0.8.0",
+                    "gpio/digital": "0.8.0",
+                    "gpio/i2c": "0.8.0",
+                    "gpio/integrated-circuits": "0.8.0",
+                    "gpio/nuts-and-bolts": "0.8.0",
+                    "gpio/pwm": "0.8.0",
+                    "gpio/spi": "0.8.0",
+                    "gpio/uart": "0.8.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/venusian/framework/src/Voyager/*",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "venusian-voyager/collections": "0.8.8",
+                    "venusian-voyager/conditionable": "0.8.8",
+                    "venusian-voyager/config": "0.8.8",
+                    "venusian-voyager/contracts": "0.8.8",
+                    "venusian-voyager/io-pools": "0.8.8",
+                    "venusian-voyager/macroable": "0.8.8",
+                    "venusian-voyager/magic-aliases": "0.8.8",
+                    "venusian-voyager/nuts-and-bolts": "0.8.8",
+                    "venusian-voyager/reflection": "0.8.8",
+                    "venusian-voyager/vessel": "0.8.8"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/posix",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/gpio",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/i2c",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/spi",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/uart",
+            "options": {
+                "symlink": true
+            }
+        }
     ]
 }

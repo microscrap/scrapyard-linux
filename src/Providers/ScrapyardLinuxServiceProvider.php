@@ -35,35 +35,35 @@ class ScrapyardLinuxServiceProvider extends ServiceProvider
     private function bootPWM(): void
     {
         /** @var PWMConnectionManager $manager */
-        $manager = app(PWMConnectionManager::class);
+        $manager = $this->app->make(PWMConnectionManager::class);
         $manager->extend('native', fn() => new PosixPWMConnectionDriver);
     }
 
     private function bootDigitalIO(): void
     {
         /** @var DigitalOConnectionManager $manager */
-        $manager = app(DigitalOConnectionManager::class);
+        $manager = $this->app->make(DigitalOConnectionManager::class);
         $manager->extend('native', fn() => new PosixDigitalIOConnectionDriver);
     }
 
     private function bootUART(): void
     {
         /** @var UARTConnectionManager $manager */
-        $manager = app(UARTConnectionManager::class);
+        $manager = $this->app->make(UARTConnectionManager::class);
         $manager->extend('native', fn() => new PosixUARTConnectionDriver);
     }
 
     private function bootSPI(): void
     {
         /** @var SPIConnectionManager $manager */
-        $manager = app(SPIConnectionManager::class);
+        $manager = $this->app->make(SPIConnectionManager::class);
         $manager->extend('native', fn() => new PosixSPIConnectionDriver);
     }
 
     private function bootI2C(): void
     {
         /** @var I2CConnectionManager $manager */
-        $manager = app(I2CConnectionManager::class);
+        $manager = $this->app->make(I2CConnectionManager::class);
         $manager->extend('native', fn() => new PosixI2CConnectionDriver);
     }
 }
