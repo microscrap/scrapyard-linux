@@ -1,0 +1,69 @@
+{
+    "name": "microscrap/scrapyard-linux",
+    "description": "Native Linux connection drivers for the ScrapyardIO GPIO framework: gpiod, i2c-dev, spidev, termios and sysfs PWM over ext-posi",
+    "type": "library",
+    "version": "0.8.0",
+    "keywords": [
+        "scrapyard-io",
+        "gpio",
+        "linux",
+        "posix",
+        "drivers"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "microscrap/gpio": "^0.8.0",
+        "microscrap/i2c": "^0.8.0",
+        "microscrap/posix": "^0.8.0",
+        "microscrap/spi": "^0.8.0",
+        "microscrap/uart": "^0.8.0",
+        "scrapyard-io/framework": "^0.8.0"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Microscrap\\ScrapyardLinux\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Microscrap\\ScrapyardLinux\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.8.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Microscrap\\ScrapyardLinux\\Providers\\ScrapyardLinuxServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/scrapyard-io/framework", "options": { "symlink": true } },
+        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/venusian/framework", "options": { "symlink": true } },
+        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/posix", "options": { "symlink": true } },
+        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/gpio", "options": { "symlink": true } },
+        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/i2c", "options": { "symlink": true } },
+        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/spi", "options": { "symlink": true } },
+        { "type": "path", "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/microscrap/uart", "options": { "symlink": true } }
+    ]
+}
