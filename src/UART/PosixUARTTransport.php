@@ -2,29 +2,31 @@
 
 namespace Microscrap\ScrapyardLinux\UART;
 
+use GeneralPurposeIO\Contracts\UART\UARTException;
 use GeneralPurposeIO\UART\UARTTransport;
+use Microscrap\Bindings\POSIX\Enums\PollEvent;
 use Microscrap\Bindings\UART\DataObjects\UARTPort;
+use Microscrap\Bindings\UART\Enums\ModemLine;
 
 class PosixUARTTransport extends UARTTransport
 {
-    public function __construct(
-        protected readonly UARTPort $port,
+    /**
+     * The port's fd as a stream, opened the first time the loop asks. Once open it owns the fd: no dup, so the
+     * close-on-exec flag holds, and fclose() is what gives the fd back.
+     * @var resource|null
+     */
+    private $stream = null;
 
-    ) {}
+    public function __construct(
+        string $device,
+        public readonly UARTPort $port,
+    ) {
+        parent::__construct($device, $port->baud);
+    }
 
     public function handle(): UARTPort
     {
         return $this->port;
-    }
-
-    public function close(): void
-    {
-        uart_close($this->port);
-    }
-
-    public function flush(): void
-    {
-        uart_flush($this->port);
     }
 
     public function path(): string
@@ -32,28 +34,86 @@ class PosixUARTTransport extends UARTTransport
         return $this->port->path;
     }
 
-    public function read(int $length): array|false
+    public function dtr(bool $asserted): void
     {
-        $data = uart_read($this->port, $length);
-
-        return $data === false ? false : bytes2array($data);
+        $this->modemLine(ModemLine::DTR, $asserted);
     }
 
-    public function write(array|string $data): int
+    public function rts(bool $asserted): void
     {
-        return uart_write($this->port, static::normalizeData($data));
+        $this->modemLine(ModemLine::RTS, $asserted);
     }
 
-    public function pollBytes(int $max_bytes = 4096): string
+    /**
+     * VMIN=0: whatever the kernel holds, possibly nothing. A hung-up port (an unplugged ttyUSB) reads 0 bytes while
+     * poll calls it ready: a second read tells that apart from bytes that landed after the first one.
+     */
+    protected function drainBytes(): string
     {
-        if (posix_ppoll($this->port->fd, 0) < 1) {
-            return '';
+        $bytes = uart_read($this->port, 4096);
+
+        if ($bytes === '' && posix_ppoll($this->port->fd, 0, PollEvent::POLLIN->value) > 0) {
+            $bytes = uart_read($this->port, 4096);
+
+            if ($bytes === '') {
+                throw UARTException::readFailed($this->device);
+            }
         }
 
-        $data = uart_read($this->port, $max_bytes);
-
-        return $data === false ? '' : $data;
+        return $bytes === false ? throw UARTException::readFailed($this->device) : $bytes;
     }
 
+    protected function awaitBytes(int $timeout_ms): void
+    {
+        posix_ppoll($this->port->fd, $timeout_ms < 0 ? -1 : $timeout_ms * 1_000_000, PollEvent::POLLIN->value);
+    }
 
+    /** n_tty reports POLLOUT only while fewer than 256 bytes are queued, so a TX_CHUNK always fits then. */
+    protected function roomNow(): bool
+    {
+        return posix_ppoll($this->port->fd, 0, PollEvent::POLLOUT->value) > 0;
+    }
+
+    protected function awaitRoom(int $timeout_ms): void
+    {
+        posix_ppoll($this->port->fd, $timeout_ms < 0 ? -1 : $timeout_ms * 1_000_000, PollEvent::POLLOUT->value);
+    }
+
+    protected function transmit(string $bytes): int
+    {
+        return uart_write($this->port, $bytes);
+    }
+
+    protected function purge(): void
+    {
+        uart_flush($this->port);
+    }
+
+    protected function release(): void
+    {
+        is_null($this->stream) ? uart_close($this->port) : fclose($this->stream);
+    }
+
+    protected function intakeStreams(): array
+    {
+        $this->stream ??= posix_fdopen($this->port->fd, 'r') ?: throw UARTException::intakeStreamFailed($this->device);
+
+        return [$this->stream];
+    }
+
+    protected function samplingInterval(): ?float
+    {
+        return null;
+    }
+
+    private function modemLine(ModemLine $line, bool $asserted): void
+    {
+        $this->ensureOpen();
+
+        $result = $asserted ? uart_set_modem_line($this->port, $line) : uart_clear_modem_line($this->port, $line);
+
+        if ($result < 0) {
+            throw UARTException::modemLinesUnsupported($this->device, $line->name);
+        }
+    }
 }

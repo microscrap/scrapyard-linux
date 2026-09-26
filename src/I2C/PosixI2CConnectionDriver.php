@@ -29,4 +29,10 @@ class PosixI2CConnectionDriver extends I2CConnectionDriver
 
         return new PosixI2CTransport($slave_address, $fd);
     }
+
+    /** @param int $handle the /dev/i2c-N fd every slave on the bus shares */
+    protected function closeConnection(mixed $handle): void
+    {
+        posix_close($handle);
+    }
 }

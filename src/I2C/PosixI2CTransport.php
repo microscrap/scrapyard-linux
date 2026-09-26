@@ -7,6 +7,7 @@ use GeneralPurposeIO\I2C\I2CTransport;
 use Microscrap\Bindings\I2C\Enums\I2CMsgFlag;
 use Microscrap\Bindings\I2C\DataObjects\I2CBus;
 use Microscrap\Bindings\I2C\Enums\SMBusReadWrite;
+use Microscrap\ScrapyardLinux\I2C\Enums\I2CRdwrIoctlMaxMsgs;
 
 class PosixI2CTransport extends I2CTransport
 {
@@ -24,6 +25,9 @@ class PosixI2CTransport extends I2CTransport
 
     public function probe(): bool
     {
+        $this->ensureOpen();
+        $this->awaitTurn();
+
         $bus = new I2CBus($this->fd, '', $this->address);
 
         if (Bus::i2cSetSlaveAddr($bus, $this->address) !== 0) {
@@ -40,6 +44,10 @@ class PosixI2CTransport extends I2CTransport
 
     public function read(int $len): array|false
     {
+        $this->ensureOpen();
+        $this->ensureFits($len);
+        $this->awaitTurn();
+
         $bus = $this->addressedBus();
 
         if (is_null($bus)) {
@@ -57,14 +65,18 @@ class PosixI2CTransport extends I2CTransport
 
     public function write(array|string $data): int
     {
+        if (is_array($data)) {
+            $data = array2bytes($data);
+        }
+
+        $this->ensureOpen();
+        $this->ensureFits(strlen($data));
+        $this->awaitTurn();
+
         $bus = $this->addressedBus();
 
         if (is_null($bus)) {
             return -1;
-        }
-
-        if (is_array($data)) {
-            $data = array2bytes($data);
         }
 
         return i2c_write($bus, $data);
@@ -72,8 +84,14 @@ class PosixI2CTransport extends I2CTransport
 
     public function writeRead(array|string $bytes_to_write, int $bytes_to_read): array|false
     {
-        $bus = new I2CBus($this->fd, "", $this->address);
         $write_bytes = is_array($bytes_to_write) ? array2bytes($bytes_to_write) : $bytes_to_write;
+
+        $this->ensureOpen();
+        $this->ensureFits(strlen($write_bytes));
+        $this->ensureFits($bytes_to_read);
+        $this->awaitTurn();
+
+        $bus = new I2CBus($this->fd, "", $this->address);
 
         $result = i2c_rdwr($bus, [
             ['flags' => 0, 'data' => $write_bytes],
@@ -87,21 +105,34 @@ class PosixI2CTransport extends I2CTransport
         return bytes2array($result);
     }
 
+    /** Each chunk is its own message; batches of 42 messages per transfer, a STOP between batches. */
     public function bulkWrite(array|string $messages): array|false
     {
-        $bus = new I2CBus($this->fd, "", $this->address);
+        $this->ensureOpen();
+
         $chunks = static::normalizeBulkMessages($messages);
+
+        foreach ($chunks as $chunk) {
+            $this->ensureFits(strlen($chunk));
+        }
+
+        $this->awaitTurn();
+
         if (count($chunks) === 0) {
             return [];
         }
 
-        $result = i2c_rdwr($bus, array_map(
-            static fn (string $chunk): array => ['flags' => 0, 'data' => $chunk],
-            $chunks,
-        ));
+        $bus = new I2CBus($this->fd, "", $this->address);
 
-        if ($result === false) {
-            return false;
+        foreach (array_chunk($chunks, I2CRdwrIoctlMaxMsgs::MAX_MESSAGES_PER_TRANSFER->value) as $batch) {
+            $result = i2c_rdwr($bus, array_map(
+                static fn (string $chunk): array => ['flags' => 0, 'data' => $chunk],
+                $batch,
+            ));
+
+            if ($result === false) {
+                return false;
+            }
         }
 
         return array_map('strlen', $chunks);
@@ -120,11 +151,6 @@ class PosixI2CTransport extends I2CTransport
         return Bus::i2cSetSlaveAddr($bus, $this->address) === 0 ? $bus : null;
     }
 
-    public function close(): void
-    {
-        $bus = new I2CBus($this->fd, "", 0x00);
-        i2c_close($bus);
-    }
-
-
+    /** The fd belongs to the bus; the driver's disconnect() closes it. */
+    protected function release(): void {}
 }

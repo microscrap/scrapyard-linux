@@ -23,7 +23,8 @@ class PosixI2CConnectionFactory extends I2CConnectionFactory
     protected function getHandle(): int
     {
         $path = "/dev/i2c-{$this->device}";
-        $fd = posix_open($path, FileControlFlag::O_RDWR->value);
+        // close-on-exec: pool workers and other children open their own bus, never inherit this one
+        $fd = posix_open($path, FileControlFlag::O_RDWR->value | FileControlFlag::O_CLOEXEC->value);
 
         if($fd < 0)
         {

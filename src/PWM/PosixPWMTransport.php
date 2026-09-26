@@ -79,7 +79,7 @@ class PosixPWMTransport extends PWMTransport
     }
 
     /** Disable the output and hand the channel back to the kernel. */
-    public function close(): void
+    protected function release(): void
     {
         @file_put_contents("{$this->channel_path}/enable", '0');
         @file_put_contents("{$this->chip_path}/unexport", (string) $this->channel);
@@ -87,15 +87,21 @@ class PosixPWMTransport extends PWMTransport
 
     protected function writeAttribute(string $attribute, string $value): void
     {
+        $this->ensureOpen();
+        $this->awaitTurn();
+
         $path = "{$this->channel_path}/{$attribute}";
 
-        if (@file_put_contents($path, $value) === false) {
+        if (! is_writable($path) || file_put_contents($path, $value) === false) {
             throw PWMException::couldNotWrite($path);
         }
     }
 
     protected function readAttribute(string $attribute): string
     {
+        $this->ensureOpen();
+        $this->awaitTurn();
+
         $path = "{$this->channel_path}/{$attribute}";
         $value = is_readable($path) ? file_get_contents($path) : false;
 

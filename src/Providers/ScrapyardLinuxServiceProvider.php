@@ -6,7 +6,6 @@ use GeneralPurposeIO\Digital\DigitalOConnectionManager;
 use GeneralPurposeIO\I2C\I2CConnectionManager;
 use GeneralPurposeIO\PWM\PWMConnectionManager;
 use GeneralPurposeIO\SPI\SPIConnectionManager;
-use GeneralPurposeIO\UART\UARTConnectionDriver;
 use GeneralPurposeIO\UART\UARTConnectionManager;
 use Microscrap\ScrapyardLinux\Digital\PosixDigitalIOConnectionDriver;
 use Microscrap\ScrapyardLinux\I2C\PosixI2CConnectionDriver;
@@ -30,7 +29,6 @@ class ScrapyardLinuxServiceProvider extends ServiceProvider
         $this->bootDigitalIO();
         $this->bootPWM();
     }
-
 
     private function bootPWM(): void
     {

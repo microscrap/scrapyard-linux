@@ -9,6 +9,7 @@ use GeneralPurposeIO\Contracts\UART\StopBits;
 use GeneralPurposeIO\Contracts\UART\UARTException;
 use GeneralPurposeIO\UART\UARTConnectionFactory;
 use Microscrap\Bindings\UART\DataObjects\UARTPort;
+use Microscrap\Bindings\UART\Enums\ControlChar;
 use Microscrap\Bindings\UART\Enums\ControlFlag;
 use Microscrap\Bindings\UART\Enums\InputFlag;
 use Microscrap\Bindings\UART\Enums\TermiosAction;
@@ -40,16 +41,9 @@ class PosixUARTConnectionFactory extends UARTConnectionFactory
         return $port;
     }
 
-    private function configureLine(UARTPort $port): void
+    /** $termios with this connection's data bits, parity, stop bits, flow control and never-waiting reads. */
+    public function applyLine(array $termios): array
     {
-        $termios = uart_tcgetattr($port);
-
-        if ($termios === false) {
-            uart_close($port);
-
-            throw UARTException::couldNotConfigureUARTPort($this->device);
-        }
-
         $termios['c_cflag'] &= ~ControlFlag::CS8->value;
         $termios['c_cflag'] |= match ($this->data_bits) {
             DataBits::FIVE => ControlFlag::CS5->value,
@@ -90,7 +84,19 @@ class PosixUARTConnectionFactory extends UARTConnectionFactory
             $termios['c_iflag'] &= ~$xon_xoff;
         }
 
-        if (uart_tcsetattr($port, $termios, TermiosAction::TCSANOW) !== 0) {
+        // VMIN=0 VTIME=0: a read hands back what the kernel holds, possibly nothing, and never waits. Waiting belongs
+        // to ppoll() or the loop, both with the caller's timeout, so a silent device cannot hang a read.
+        $termios['c_cc'][ControlChar::VMIN->value] = 0;
+        $termios['c_cc'][ControlChar::VTIME->value] = 0;
+
+        return $termios;
+    }
+
+    private function configureLine(UARTPort $port): void
+    {
+        $termios = uart_tcgetattr($port);
+
+        if ($termios === false || uart_tcsetattr($port, $this->applyLine($termios), TermiosAction::TCSANOW) !== 0) {
             uart_close($port);
 
             throw UARTException::couldNotConfigureUARTPort($this->device);

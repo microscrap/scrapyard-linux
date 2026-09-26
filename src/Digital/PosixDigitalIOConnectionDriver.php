@@ -33,14 +33,16 @@ class PosixDigitalIOConnectionDriver extends DigitalIOConnectionDriver
 
     protected function getOutputTransport(string|int $device, int $pin): PosixDigitalOutputTransport
     {
-        if(isset($this->pins[$pin]))
+        $key = "{$device}:{$pin}";
+
+        if(isset($this->pins[$key]))
         {
-            if($this->pins[$pin] instanceOf PosixDigitalOutputTransport)
+            if($this->pins[$key] instanceOf PosixDigitalOutputTransport)
             {
-                return $this->pins[$pin];
+                return $this->pins[$key];
             }
 
-            throw new DigitalIOException("Pin {$pin} is not an output");
+            throw new DigitalIOException("Pin {$pin} on device {$device} is not an output");
         }
 
         /**
@@ -54,19 +56,21 @@ class PosixDigitalIOConnectionDriver extends DigitalIOConnectionDriver
 
         $handle = $this->requestLine($chip, $req_config, $pin, $settings);
 
-        return $this->pins[$pin] = new PosixDigitalOutputTransport($pin, $chip, $handle);
+        return $this->pins[$key] = new PosixDigitalOutputTransport($pin, $chip, $handle);
     }
 
     protected function getInputTransport(string|int $device, int $pin, LineBias $bias = LineBias::AS_IS, bool $active_low = false): PosixDigitalInputTransport
     {
-        if(isset($this->pins[$pin]))
+        $key = "{$device}:{$pin}";
+
+        if(isset($this->pins[$key]))
         {
-            if($this->pins[$pin] instanceOf PosixDigitalInputTransport)
+            if($this->pins[$key] instanceOf PosixDigitalInputTransport)
             {
-                return $this->pins[$pin];
+                return $this->pins[$key];
             }
 
-            throw new DigitalIOException("Pin {$pin} is not an input");
+            throw new DigitalIOException("Pin {$pin} on device {$device} is not an input");
         }
 
         /**
@@ -84,7 +88,17 @@ class PosixDigitalIOConnectionDriver extends DigitalIOConnectionDriver
         $handle = $this->requestLine($chip, $req_config, $pin, $settings);
         $this->unblock($handle);
 
-        return $this->pins[$pin] = new PosixDigitalInputTransport($pin, $chip, $handle);
+        return $this->pins[$key] = new PosixDigitalInputTransport($pin, $chip, $handle);
+    }
+
+    /**
+     * @param array{GPIORequestConfig, GPIOChip} $handle
+     */
+    protected function closeConnection(mixed $handle): void
+    {
+        [, $chip] = $handle;
+
+        gpiod_chip_close($chip);
     }
 
     protected function requestLine(GPIOChip $chip, GPIORequestConfig $req_config, int $pin, GPIOLineSettings $settings): GPIOLineRequest
