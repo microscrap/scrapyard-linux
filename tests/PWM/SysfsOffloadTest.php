@@ -3,9 +3,8 @@
 use GeneralPurposeIO\Contracts\PWM\PWMException;
 use Microscrap\ScrapyardLinux\PWM\PosixPWMConnectionDriver;
 use Voyager\Contracts\IOPools\Loop;
-use Voyager\Contracts\IOPools\WorkTarget;
-use Voyager\IOPools\EventLoop;
-use Voyager\IOPools\WorkTargets\SyncTarget;
+use Microscrap\ScrapyardLinux\Tests\Fixtures\InlinePool;
+use Voyager\Contracts\IOPools\WorkerPools\WorkerPool;
 
 afterEach(fn () => removePwmTrees());
 
@@ -14,7 +13,7 @@ function loopedPWM(string $root, Loop $loop, int $ready_timeout_ms = 500): Posix
 {
     $driver = (new PosixPWMConnectionDriver($root))
         ->resolvesLoopWith(fn (): Loop => $loop)
-        ->resolvesTargetsWith(fn (?string $name): WorkTarget => new SyncTarget($loop));
+        ->resolvesPoolsWith(fn (?string $pool): WorkerPool => new InlinePool($loop));
     $driver->connectTo(0)->readyTimeout($ready_timeout_ms)->register();
 
     return $driver;
@@ -22,7 +21,7 @@ function loopedPWM(string $root, Loop $loop, int $ready_timeout_ms = 500): Posix
 
 it('offloads to a worker-side driver on the same sysfs tree', function () {
     $root = pwmTree();
-    $loop = new EventLoop;
+    $loop = testLoop();
     $servo = loopedPWM($root, $loop)->device(0, 0);
 
     expect($servo->via()->setPeriod(20_000_000)->wait())->toBe(20_000_000)
@@ -33,7 +32,7 @@ it('offloads to a worker-side driver on the same sysfs tree', function () {
 
 it('waits for a freshly exported channel on the loop, and other timers keep firing meanwhile', function () {
     $root = pwmTree(channels: []);
-    $loop = new EventLoop;
+    $loop = testLoop();
     $driver = loopedPWM($root, $loop);
     $ticks = 0;
     $ticker = $loop->every(0.005, function () use (&$ticks) { $ticks++; }, 'test-ticker');
@@ -52,7 +51,7 @@ it('waits for a freshly exported channel on the loop, and other timers keep firi
 
 it('suspends only the fiber that opens the channel', function () {
     $root = pwmTree(channels: []);
-    $loop = new EventLoop;
+    $loop = testLoop();
     $driver = loopedPWM($root, $loop);
 
     $started = hrtime(true);
@@ -67,19 +66,19 @@ it('suspends only the fiber that opens the channel', function () {
 
 it('gives up after the ready timeout and leaves no timer behind', function () {
     $root = pwmTree(channels: []);
-    $loop = new EventLoop;
+    $loop = testLoop();
     $driver = loopedPWM($root, $loop, 30);
 
     expect(fn () => $driver->device(0, 0))
         ->toThrow(PWMException::class, "PWM channel attribute is not writable yet: {$root}/pwmchip0/pwm0/period");
 
     // nothing is due once the wait is over: a poll timer left behind would keep every later run() turning
-    expect((new ReflectionMethod(EventLoop::class, 'nextDue'))->invoke($loop))->toBeNull();
+    expect($loop->registry->soonestDue())->toBeNull();
 });
 
 it('hands one transport to two fibers that open the same channel while it comes up', function () {
     $root = pwmTree(channels: []);
-    $loop = new EventLoop;
+    $loop = testLoop();
     $driver = loopedPWM($root, $loop);
 
     $first = $loop->async(fn () => $driver->device(0, 0));

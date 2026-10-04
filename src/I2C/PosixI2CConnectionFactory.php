@@ -4,7 +4,6 @@ namespace Microscrap\ScrapyardLinux\I2C;
 
 use GeneralPurposeIO\Contracts\I2C\I2CException;
 use GeneralPurposeIO\I2C\I2CConnectionFactory;
-use Microscrap\Bindings\POSIX\Enums\FileControlFlag;
 
 class PosixI2CConnectionFactory extends I2CConnectionFactory
 {
@@ -24,7 +23,7 @@ class PosixI2CConnectionFactory extends I2CConnectionFactory
     {
         $path = "/dev/i2c-{$this->device}";
         // close-on-exec: pool workers and other children open their own bus, never inherit this one
-        $fd = posix_open($path, FileControlFlag::O_RDWR->value | FileControlFlag::O_CLOEXEC->value);
+        $fd = posix_open($path, O_RDWR | O_CLOEXEC);
 
         if($fd < 0)
         {

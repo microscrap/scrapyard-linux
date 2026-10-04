@@ -1,25 +1,24 @@
 <?php
 
 use GeneralPurposeIO\Contracts\UART\UARTReceived;
-use Voyager\Contracts\IOPools\MailCollection;
-use Voyager\Contracts\IOPools\Receivable;
-use Voyager\IOPools\EventLoop;
+use Voyager\Contracts\IOPools\Loop;
+use Voyager\Contracts\IOPools\MailHandler;
 
 afterEach(fn () => closePtys());
 
 it('mails what the device sends while the port is watched', function () {
     [$master, $path] = ptyPair();
-    $mail = new class implements Receivable {
+    $mail = new class implements MailHandler {
         public array $events = [];
 
-        public function handOff(MailCollection $mail): void
+        public function handOff(array $mail, Loop $loop): void
         {
-            foreach ($mail->mail() as $event) {
+            foreach ($mail as $event) {
                 $this->events[] = $event;
             }
         }
     };
-    $loop = new EventLoop(null, 16, $mail);
+    $loop = testLoop($mail);
     $port = ptyPort($path, $loop);
 
     $port->watch();
@@ -33,7 +32,7 @@ it('mails what the device sends while the port is watched', function () {
 
 it('a read in a fiber suspends until the device sends', function () {
     [$master, $path] = ptyPair();
-    $loop = new EventLoop;
+    $loop = testLoop();
     $port = ptyPort($path, $loop);
     $order = [];
 
@@ -50,7 +49,7 @@ it('a read in a fiber suspends until the device sends', function () {
 
 it('write() on the loop reaches the device intact', function () {
     [$master, $path] = ptyPair();
-    $loop = new EventLoop;
+    $loop = testLoop();
     $port = ptyPort($path, $loop);
     $payload = str_repeat("\$PMTK605*31\r\n", 80);    // 1040 bytes
 
@@ -67,7 +66,7 @@ it('write() on the loop reaches the device intact', function () {
 
 it('close() on a watched port gives the fd back and ends run()', function () {
     [, $path] = ptyPair();
-    $loop = new EventLoop;
+    $loop = testLoop();
     $port = ptyPort($path, $loop);
     $fd = $port->port->fd;
 

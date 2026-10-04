@@ -2,7 +2,7 @@
     "name": "microscrap/scrapyard-linux",
     "description": "Native Linux connection drivers for the ScrapyardIO GPIO framework: gpiod, i2c-dev, spidev, termios and sysfs PWM over ext-posi",
     "type": "library",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "keywords": [
         "scrapyard-io",
         "gpio",
@@ -19,25 +19,24 @@
     ],
     "require": {
         "php": "^8.4|^8.5|^8.6",
-        "ext-posi": "^0.9.0",
-        "gpio/contracts": "^0.9.0",
-        "gpio/digital": "^0.9.0",
-        "gpio/i2c": "^0.9.0",
-        "gpio/nuts-and-bolts": "^0.9.0",
-        "gpio/pwm": "^0.9.0",
-        "gpio/spi": "^0.9.0",
-        "gpio/uart": "^0.9.0",
-        "microscrap/gpio": "^0.9.0",
-        "microscrap/i2c": "^0.9.0",
-        "microscrap/posix": "^0.9.0",
-        "microscrap/spi": "^0.9.0",
-        "microscrap/uart": "^0.9.0",
-        "venusian-voyager/nuts-and-bolts": "^0.9.0"
+        "ext-posi": "^0.10.0",
+        "gpio/contracts": "^0.10.0",
+        "gpio/digital": "^0.10.0",
+        "gpio/i2c": "^0.10.0",
+        "gpio/nuts-and-bolts": "^0.10.0",
+        "gpio/pwm": "^0.10.0",
+        "gpio/spi": "^0.10.0",
+        "gpio/uart": "^0.10.0",
+        "microscrap/gpio": "^0.10.0",
+        "microscrap/i2c": "^0.10.0",
+        "microscrap/spi": "^0.10.0",
+        "microscrap/uart": "^0.10.0",
+        "venusian-voyager/nuts-and-bolts": "^0.10.0"
     },
     "require-dev": {
         "pestphp/pest": "^4",
-        "venusian-voyager/config": "^0.9.0",
-        "venusian-voyager/vessel": "^0.9.0"
+        "venusian-voyager/config": "^0.10.0",
+        "venusian-voyager/vessel": "^0.10.0"
     },
     "autoload": {
         "psr-4": {
@@ -51,7 +50,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.9.x-dev"
+            "dev-main": "0.10.x-dev"
         },
         "venusian": {
             "providers": [

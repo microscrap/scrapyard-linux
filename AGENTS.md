@@ -4,7 +4,7 @@
 
 ## Role
 
-The Linux adapter for `scrapyard-io/framework` 0.9: the `native` driver on the I2C, SPI, UART, DigitalIO and PWM managers, over `ext-posi` and the `microscrap/{posix,gpio,i2c,spi,uart}` bindings. Depends on the `gpio/*` splits, never on the whole framework.
+The Linux adapter for `scrapyard-io/framework` 0.10: the `native` driver on the I2C, SPI, UART, DigitalIO and PWM managers, over `ext-posi` and the `microscrap/{posix,gpio,i2c,spi,uart}` bindings. Depends on the `gpio/*` splits, never on the whole framework.
 
 ## Rules
 

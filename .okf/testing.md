@@ -44,4 +44,4 @@ vendor/bin/pest
 
 # CI
 
-`.github/workflows/tests.yml`: ubuntu, PHP 8.4 and 8.5, `pie install php-io-extensions/posi:^0.9` (posi needs no system libraries), `composer update --prefer-stable`, `vendor/bin/pest`. Resolves `gpio/*` and `microscrap/*` 0.9 from Packagist.
+`.github/workflows/tests.yml`: ubuntu, PHP 8.4, `sudo pie install php-io-extensions/posi:^0.10` (posi needs no system libraries; sudo because the system extension dir is root's), `composer update --prefer-stable`, `vendor/bin/pest`. Resolves `gpio/*` and `microscrap/*` 0.10 from Packagist.

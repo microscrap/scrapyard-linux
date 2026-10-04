@@ -48,4 +48,4 @@ Every transfer carries this slave's clock (`speed($hz)` → `spi_set_speed`, che
 
 # via()
 
-`SPIBusGig` on a work target; a pool worker opens its own spidev fd, the bus lock keeps its selections from interleaving with the parent's.
+`SPIBusGig` on a worker pool; a pool worker opens its own spidev fd, the bus lock keeps its selections from interleaving with the parent's.

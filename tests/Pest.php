@@ -1,12 +1,24 @@
 <?php
 
-use Microscrap\Bindings\POSIX\Enums\FileControlFlag;
 use Microscrap\ScrapyardLinux\UART\PosixUARTConnectionDriver;
 use Microscrap\ScrapyardLinux\UART\PosixUARTTransport;
-use Posi\System;
 use Voyager\Contracts\IOPools\Loop;
+use Voyager\Contracts\IOPools\MailHandler;
+use Voyager\IOPools\EventLoop;
+use Voyager\IOPools\LoopWaiter;
+use Voyager\IOPools\PromiseEngines\GuzzlePromiseEngine;
+use Voyager\IOPools\ResourceRegistry;
+use Voyager\IOPools\Waiter\StreamSelectWaiterBackend;
 
 pest()->in('I2C', 'SPI', 'PWM', 'UART');
+
+/** A loop on the select backend, polling at most every $pace_ms, handing its mail to $mail when given. */
+function testLoop(?MailHandler $mail = null, int $pace_ms = 16): EventLoop
+{
+    $registry = new ResourceRegistry;
+
+    return new EventLoop($registry, new LoopWaiter($registry, new StreamSelectWaiterBackend, $pace_ms * 1_000_000), new GuzzlePromiseEngine, $mail);
+}
 
 /** Every tree pwmTree() made; removePwmTrees() deletes them after each PWM test. */
 $GLOBALS['pwm_trees'] = [];
@@ -59,11 +71,11 @@ $GLOBALS['ptys'] = [];
  */
 function ptyPair(): array
 {
-    $master = posix_open('/dev/ptmx', FileControlFlag::O_RDWR->value | FileControlFlag::O_NOCTTY->value | FileControlFlag::O_CLOEXEC->value);
+    $master = posix_open('/dev/ptmx', O_RDWR | O_NOCTTY | O_CLOEXEC);
     expect($master)->toBeGreaterThanOrEqual(0);
 
-    System::ioctl($master, 0x40045431, ['value' => 0]);                   // TIOCSPTLCK: unlock the slave
-    $number = System::ioctl($master, 0x80045430, ['value' => 0])['val'];   // TIOCGPTN: which /dev/pts/N it is
+    ioctl($master, 0x40045431, ['value' => 0], $unused);   // TIOCSPTLCK: unlock the slave
+    ioctl($master, 0x80045430, ['value' => 0], $number);   // TIOCGPTN: which /dev/pts/N it is
     $GLOBALS['ptys'][] = $master;
 
     return [$master, "/dev/pts/{$number}"];

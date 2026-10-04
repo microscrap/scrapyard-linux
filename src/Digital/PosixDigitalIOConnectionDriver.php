@@ -12,8 +12,6 @@ use Microscrap\Bindings\GPIO\DataObjects\GPIORequestConfig;
 use Microscrap\Bindings\GPIO\Enums\LineBias as GpiodLineBias;
 use Microscrap\Bindings\GPIO\Enums\LineDirection;
 use Microscrap\Bindings\GPIO\Enums\LineEdge;
-use Microscrap\Bindings\POSIX\Enums\FcntlCommand;
-use Microscrap\Bindings\POSIX\Enums\FileControlFlag;
 
 class PosixDigitalIOConnectionDriver extends DigitalIOConnectionDriver
 {
@@ -121,7 +119,7 @@ class PosixDigitalIOConnectionDriver extends DigitalIOConnectionDriver
         $flags = 0;
         $ignored = null;
 
-        fcntl($handle->fd, FcntlCommand::F_GETFL->value, 0, $flags);
-        fcntl($handle->fd, FcntlCommand::F_SETFL->value, $flags | FileControlFlag::O_NONBLOCK->value, $ignored);
+        fcntl($handle->fd, F_GETFL, null, $flags);
+        fcntl($handle->fd, F_SETFL, $flags | O_NONBLOCK, $ignored);
     }
 }

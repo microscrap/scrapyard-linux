@@ -4,7 +4,6 @@ namespace Microscrap\ScrapyardLinux\UART;
 
 use GeneralPurposeIO\Contracts\UART\UARTException;
 use GeneralPurposeIO\UART\UARTTransport;
-use Microscrap\Bindings\POSIX\Enums\PollEvent;
 use Microscrap\Bindings\UART\DataObjects\UARTPort;
 use Microscrap\Bindings\UART\Enums\ModemLine;
 
@@ -52,7 +51,7 @@ class PosixUARTTransport extends UARTTransport
     {
         $bytes = uart_read($this->port, 4096);
 
-        if ($bytes === '' && posix_ppoll($this->port->fd, 0, PollEvent::POLLIN->value) > 0) {
+        if ($bytes === '' && posix_ppoll($this->port->fd, 0, POLLIN) > 0) {
             $bytes = uart_read($this->port, 4096);
 
             if ($bytes === '') {
@@ -65,18 +64,18 @@ class PosixUARTTransport extends UARTTransport
 
     protected function awaitBytes(int $timeout_ms): void
     {
-        posix_ppoll($this->port->fd, $timeout_ms < 0 ? -1 : $timeout_ms * 1_000_000, PollEvent::POLLIN->value);
+        posix_ppoll($this->port->fd, $timeout_ms < 0 ? -1 : $timeout_ms * 1_000_000, POLLIN);
     }
 
     /** n_tty reports POLLOUT only while fewer than 256 bytes are queued, so a TX_CHUNK always fits then. */
     protected function roomNow(): bool
     {
-        return posix_ppoll($this->port->fd, 0, PollEvent::POLLOUT->value) > 0;
+        return posix_ppoll($this->port->fd, 0, POLLOUT) > 0;
     }
 
     protected function awaitRoom(int $timeout_ms): void
     {
-        posix_ppoll($this->port->fd, $timeout_ms < 0 ? -1 : $timeout_ms * 1_000_000, PollEvent::POLLOUT->value);
+        posix_ppoll($this->port->fd, $timeout_ms < 0 ? -1 : $timeout_ms * 1_000_000, POLLOUT);
     }
 
     protected function transmit(string $bytes): int

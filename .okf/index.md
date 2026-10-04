@@ -4,7 +4,7 @@ okf_version: "0.2"
 
 # microscrap/scrapyard-linux — knowledge bundle
 
-Linux adapter for `scrapyard-io/framework` 0.9. Registers the `native` driver on the I2C, SPI, UART, DigitalIO and PWM managers. Kernel interfaces: `libgpiod` v2 character devices, `i2c-dev`, `spidev`, termios ttys, sysfs PWM — all through `ext-posi` and the `microscrap/*` bindings, PWM through plain files.
+Linux adapter for `scrapyard-io/framework` 0.10. Registers the `native` driver on the I2C, SPI, UART, DigitalIO and PWM managers. Kernel interfaces: `libgpiod` v2 character devices, `i2c-dev`, `spidev`, termios ttys, sysfs PWM — all through `ext-posi` and the `microscrap/*` bindings, PWM through plain files.
 
 Read this index first, then only the concepts the task needs. Every concept is `status: draft` until a human verifies it.
 

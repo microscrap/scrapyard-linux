@@ -39,4 +39,4 @@ Plain read/write address the fd's current slave, so the address is re-selected b
 
 # via()
 
-Base framework behaviour: a `BusGig` naming `PosixI2CConnectionDriver` runs on a work target. A pool worker builds its own driver and opens its own `/dev/i2c-N` (close-on-exec keeps the parent's fd out). The kernel serialises transfers per adapter across processes.
+Base framework behaviour: a `BusGig` naming `PosixI2CConnectionDriver` runs on a worker pool. A pool worker builds its own driver and opens its own `/dev/i2c-N` (close-on-exec keeps the parent's fd out). The kernel serialises transfers per adapter across processes.

@@ -6,7 +6,6 @@ use GeneralPurposeIO\Contracts\UART\UARTException;
 use Microscrap\Bindings\UART\Enums\ControlChar;
 use Microscrap\Bindings\UART\Enums\ControlFlag;
 use Microscrap\Bindings\UART\Enums\InputFlag;
-use Microscrap\Bindings\POSIX\Enums\FileControlFlag;
 use Microscrap\Bindings\UART\DataObjects\UARTPort;
 use Microscrap\ScrapyardLinux\UART\PosixUARTConnectionDriver;
 use Microscrap\ScrapyardLinux\UART\PosixUARTTransport;
@@ -153,8 +152,8 @@ it('reports a device that hung up instead of spinning on it', function () {
     // an unplugged ttyUSB polls ready and reads 0 bytes forever; a FIFO whose writer closed does exactly the same
     $fifo = sys_get_temp_dir().'/uart-hangup-'.bin2hex(random_bytes(4));
     exec('mkfifo '.escapeshellarg($fifo));
-    $reader = posix_open($fifo, FileControlFlag::O_RDONLY->value | FileControlFlag::O_NONBLOCK->value);
-    posix_close(posix_open($fifo, FileControlFlag::O_WRONLY->value));
+    $reader = posix_open($fifo, O_RDONLY | O_NONBLOCK);
+    posix_close(posix_open($fifo, O_WRONLY));
     $port = new PosixUARTTransport('/dev/ttyGONE', new UARTPort($reader, $fifo, 9_600));
 
     $started = hrtime(true);

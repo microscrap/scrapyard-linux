@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Overview
-description: What scrapyard-linux 0.9 ships, where it sits, how it registers, how devices are named, and which waits block or ride the loop.
+description: What scrapyard-linux 0.10 ships, where it sits, how it registers, how devices are named, and which waits block or ride the loop.
 tags: [overview, provider, stack, drivers]
 status: draft
 generated: { by: claude-opus-5-5/claude-code, at: "2026-09-25T23:00:00Z" }
@@ -23,7 +23,7 @@ ext-posi                      1:1 POSIX, ioctl, termios, gpiod syscalls
       → scrapyard-io/framework (gpio/*)    managers, transports, loop and via() machinery
 ```
 
-Requires `gpio/{contracts,digital,i2c,spi,uart,pwm,nuts-and-bolts}` ^0.9 — the splits, not the framework. `ext-posi` ^0.9 is a hard requirement even though PWM alone never touches it.
+Requires `gpio/{contracts,digital,i2c,spi,uart,pwm,nuts-and-bolts}` ^0.10 — the splits, not the framework. `ext-posi` ^0.10 is a hard requirement even though PWM alone never touches it.
 
 # Provider
 
@@ -44,7 +44,7 @@ Requires `gpio/{contracts,digital,i2c,spi,uart,pwm,nuts-and-bolts}` ^0.9 — the
 # Blocking vs loop
 
 - **Loop-woken (fd in the select set):** Digital input edges (line-request fd), UART intake (tty fd). Both via `posix_fdopen`, no dup — the stream owns the fd and close-on-exec holds.
-- **Always blocking, fast:** I2C and SPI transfers. i2c-dev and spidev have no poll support worth selecting on (always ready), so they stay synchronous; `via()` moves them to a work target instead.
+- **Always blocking, fast:** I2C and SPI transfers. i2c-dev and spidev have no poll support worth selecting on (always ready), so they stay synchronous; `via()` moves them to a worker pool instead.
 - **UART writes on the loop:** paced by POLLOUT checks on loop turns (see [uart.md](/uart.md)).
 - **PWM export wait:** a loop timer when a loop is bound, `usleep` otherwise (see [pwm.md](/pwm.md)).
 
