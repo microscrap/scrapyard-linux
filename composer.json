@@ -2,7 +2,7 @@
     "name": "microscrap/scrapyard-linux",
     "description": "Native Linux connection drivers for the ScrapyardIO GPIO framework: gpiod, i2c-dev, spidev, termios and sysfs PWM over ext-posi",
     "type": "library",
-    "version": "0.10.0",
+    "version": "0.10.1",
     "keywords": [
         "scrapyard-io",
         "gpio",

@@ -32,7 +32,9 @@ MSB → nothing to do. LSB → `spi_set_lsb_first`. Refused (Pi 5 controller) wi
 
 # Messages
 
-`maxMessage()` = `/sys/module/spidev/parameters/bufsiz`, 4096 when unreadable. A call's segments (`[tx, keep rx]`) are chunked into messages ≤ bufsiz. Every message but the last sets `cs_change` on its last transfer → chip select stays asserted across message boundaries, so any length is one selection on the wire. Inside `select()` the last one keeps it too; `endSelection()` sends a zero-length message to release. Empty segments send nothing.
+`maxMessage()` = `/sys/module/spidev/parameters/bufsiz`, 4096 when unreadable. A call's segments (`[tx, keep rx]`) are chunked into messages ≤ bufsiz. Every message but the last sets `cs_change` on its last transfer → chip select stays asserted across message boundaries, so any length is one selection on the wire. Inside `select()` the last one keeps it too; `endSelection()` sends a zero-length message to release. Empty segments send nothing. spidev counts every transfer rounded up to ARCH_DMA_MINALIGN against bufsiz (128 on the Pi 5's arm64 6.12 kernel: 1 + 65409 bytes refused with EMSGSIZE, 1 + 65408 taken), so messages are planned at that size (`DMA_ALIGN`).
+
+`writeFrom([[address, length], …])` (`WritesFromMemory`): the same planning over memory spans, each a transfer whose `tx_buf` is the address (`SPITransfer::$txAddress`), no copy; a span split on a 128-byte boundary where a message fills; at most 511 transfers a message (`SPI_IOC_MESSAGE`'s 14-bit size). A slave reversing bits in software refuses it.
 
 Every transfer carries this slave's clock (`speed($hz)` → `spi_set_speed`, checked by the kernel) and the bus word size: spidev stores speed/bits per device node for every fd in every process, so a worker's open would otherwise change them underneath.
 

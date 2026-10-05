@@ -4,6 +4,7 @@ namespace Microscrap\ScrapyardLinux\SPI;
 
 use Closure;
 use GeneralPurposeIO\Contracts\SPI\SPIException;
+use GeneralPurposeIO\Contracts\SPI\WritesFromMemory;
 use GeneralPurposeIO\SPI\SPITransport;
 use Microscrap\Bindings\SPI\DataObjects\SPIDevice;
 use Microscrap\Bindings\SPI\DataObjects\SPITransfer;
@@ -15,9 +16,19 @@ use Microscrap\Bindings\SPI\DataObjects\SPITransfer;
  * zero-length message. Every call, and a whole select(), holds the bus lock, so no other process drives another chip
  * select meanwhile. spidev keeps speed and word size per device for every fd in every process, and any open (a pool
  * worker's included) rewrites them, so every transfer carries this slave's clock and the bus word size itself.
+ * writeFrom() sends bytes straight out of memory the same way, with no copy into PHP.
  */
-class PosixSPITransport extends SPITransport
+class PosixSPITransport extends SPITransport implements WritesFromMemory
 {
+    /** SPI_IOC_MESSAGE's size field is 14 bits: 16383 bytes of 32-byte structs. */
+    private const MAX_TRANSFERS = 511;
+
+    /**
+     * spidev counts each transfer against bufsiz as its length rounded up to ARCH_DMA_MINALIGN: 128 on arm64 (measured
+     * on the Pi 5, kernel 6.12: 1 + 65409 bytes is refused at bufsiz 65536, 1 + 65408 taken), smaller elsewhere.
+     */
+    private const DMA_ALIGN = 128;
+
     /** A message left chip select asserted: it has to be let go. */
     private bool $holding = false;
 
@@ -87,6 +98,46 @@ class PosixSPITransport extends SPITransport
         return $this->exchange([[$tx, false], [str_repeat("\0", $bytes_to_read), true]]);
     }
 
+    /**
+     * $spans ([address, length]) straight out of memory: spidev reads each transfer's tx_buf at its address and
+     * nothing is copied into PHP. Messages and chip select as write(): at most max_message bytes a message, chip
+     * select held across them, and inside select() after the last too.
+     *
+     * @param  list<array{int, int}>  $spans
+     *
+     * @throws SPIException when this slave reverses bits in software
+     */
+    public function writeFrom(array $spans): int
+    {
+        if ($this->reverse_bits) {
+            throw SPIException::memoryNeedsNativeBitOrder($this->handle->path);
+        }
+
+        $this->ensureOpen();
+
+        return SpidevBusLock::for($this->bus)->around($this, function () use ($spans): int {
+            $written = 0;
+
+            foreach ($this->memoryMessages($spans) as $message) {
+                if (spi_transfer($this->handle, ...$message) === false) {
+                    if (! $this->selected()) {
+                        $this->letGoOfChipSelect();
+                    }
+
+                    return -1;
+                }
+
+                $this->holding = $message[count($message) - 1]->csChange;
+
+                foreach ($message as $transfer) {
+                    $written += $transfer->len;
+                }
+            }
+
+            return $written;
+        });
+    }
+
     /** Chip select asserts with the first message; nothing to send yet. */
     protected function beginSelection(): void {}
 
@@ -107,9 +158,10 @@ class PosixSPITransport extends SPITransport
     }
 
     /**
-     * $segments ([tx bytes, whether their rx is kept]) as spidev messages of at most max_message bytes, each a list of
-     * [transfer, whether its rx is kept]. Every message but the last leaves chip select asserted (cs_change on its last
-     * transfer); inside select() the last one does too. Empty segments send nothing.
+     * $segments ([tx bytes, whether their rx is kept]) as spidev messages of at most max_message bytes, each transfer
+     * counted rounded up to DMA_ALIGN, each a list of [transfer, whether its rx is kept]. Every message but the last
+     * leaves chip select asserted (cs_change on its last transfer); inside select() the last one does too. Empty
+     * segments send nothing.
      * @param list<array{string, bool}> $segments
      * @return list<list<array{SPITransfer, bool}>>
      */
@@ -125,13 +177,13 @@ class PosixSPITransport extends SPITransport
                     continue;
                 }
 
-                if (strlen($chunk) > $room) {
+                if (self::aligned(strlen($chunk)) > $room) {
                     $chunked[] = [];
                     $room = $this->max_message;
                 }
 
                 $chunked[count($chunked) - 1][] = [$chunk, $keep];
-                $room -= strlen($chunk);
+                $room -= self::aligned(strlen($chunk));
             }
         }
 
@@ -150,6 +202,59 @@ class PosixSPITransport extends SPITransport
                     bitsPerWord: $this->handle->bitsPerWord,
                     csChange: $keep_cs && $j === count($chunks) - 1,
                 ), $keep];
+            }
+
+            $messages[] = $message;
+        }
+
+        return $messages;
+    }
+
+    /**
+     * $spans as spidev messages of at most max_message bytes and MAX_TRANSFERS transfers, each transfer counted rounded
+     * up to DMA_ALIGN, a span split on a DMA_ALIGN boundary where a message fills. Every message but the last leaves
+     * chip select asserted; inside select() the last one does too.
+     *
+     * @param  list<array{int, int}>  $spans
+     * @return list<list<SPITransfer>>
+     */
+    protected function memoryMessages(array $spans): array
+    {
+        /** @var list<list<array{int, int}>> $chunked */
+        $chunked = [];
+        $room = 0;
+
+        foreach ($spans as [$address, $length]) {
+            while ($length > 0) {
+                if ($room < self::DMA_ALIGN || count($chunked[count($chunked) - 1]) === self::MAX_TRANSFERS) {
+                    $chunked[] = [];
+                    $room = $this->max_message;
+                }
+
+                $take = self::aligned($length) <= $room ? $length : intdiv($room, self::DMA_ALIGN) * self::DMA_ALIGN;
+                $chunked[count($chunked) - 1][] = [$address, $take];
+                $address += $take;
+                $length -= $take;
+                $room -= self::aligned($take);
+            }
+        }
+
+        $last = count($chunked) - 1;
+        $messages = [];
+
+        foreach ($chunked as $i => $chunks) {
+            $keep_cs = $i !== $last || $this->selected();
+            $message = [];
+
+            foreach ($chunks as $j => [$address, $take]) {
+                $message[] = new SPITransfer(
+                    tx: '',
+                    len: $take,
+                    speedHz: $this->hz ?? $this->handle->speed,
+                    bitsPerWord: $this->handle->bitsPerWord,
+                    csChange: $keep_cs && $j === count($chunks) - 1,
+                    txAddress: $address,
+                );
             }
 
             $messages[] = $message;
@@ -193,6 +298,12 @@ class PosixSPITransport extends SPITransport
 
             return bytes2array($this->bits($rx));
         });
+    }
+
+    /** $length as spidev counts it against bufsiz. */
+    private static function aligned(int $length): int
+    {
+        return intdiv($length + self::DMA_ALIGN - 1, self::DMA_ALIGN) * self::DMA_ALIGN;
     }
 
     /** A zero-length message without cs_change: chip select goes up. Nothing to send when no message left it down. */

@@ -67,3 +67,10 @@ it('sends nothing for an empty segment', function () {
 it('reverses the bits of every byte it sends when the controller cannot send LSB first', function () {
     expect(planned(reverse_bits: true)->plan([["\x01\x80\xF0", false]])[0][0][0]->tx)->toBe("\x80\x01\x0F");
 });
+
+it('counts every transfer rounded up to 128 bytes against bufsiz, as spidev does', function () {
+    expect(shape(planned()->plan([["\x0B", false], [str_repeat("\0", 4095), true]])))->toBe([
+        [[1, false, true]],
+        [[4095, true, false]],
+    ]);
+});

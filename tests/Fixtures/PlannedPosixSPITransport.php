@@ -12,6 +12,11 @@ final class PlannedPosixSPITransport extends PosixSPITransport
         return $this->messages($segments);
     }
 
+    public function planFrom(array $spans): array
+    {
+        return $this->memoryMessages($spans);
+    }
+
     public function clockAt(int $hz): static
     {
         $this->hz = $hz;

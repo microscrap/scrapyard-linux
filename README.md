@@ -93,6 +93,7 @@ The framework's README covers the transports, the event loop and `via()`. What t
 - Every process on the machine takes the bus in turn through `flock()` on `/run/lock/scrapyard-spi<bus>.lock`. A pool worker, another program and this process never interleave on one bus.
 - `speed($hz)` on a slave sets its own clock, carried on every transfer.
 - LSB-first on a controller that refuses it, such as the Pi 5's, is done by reversing bits in PHP for 8-bit words. Other word sizes throw.
+- `writeFrom([[$address, $length], …])` sends bytes straight out of memory, such as an ext-fb framebuffer's rows, with no copy into PHP. Surface's `DirectEDisplay` uses it to drive an ST77xx panel.
 
 ### UART
 
