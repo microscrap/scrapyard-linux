@@ -25,8 +25,8 @@ ext-posi                               1:1 POSIX, ioctl, termios and gpiod calls
 ## Requirements
 
 - PHP 8.4 or newer, on Linux
-- [`ext-posi`](https://github.com/php-io-extensions/posi) 0.10: `pie install php-io-extensions/posi`
-- `scrapyard-io/framework` 0.10, or just the `gpio/*` components it is split into
+- [`ext-posi`](https://github.com/php-io-extensions/posi) 0.11: `pie install php-io-extensions/posi`
+- `scrapyard-io/framework` 0.11, or just the `gpio/*` components it is split into
 - Access to the device nodes. On Raspberry Pi OS, add your user to `gpio`, `i2c`, `spi` and `dialout`, and enable the interfaces you use with `raspi-config` or `dtparam`/`dtoverlay` lines in `config.txt`.
 
 ## Installation

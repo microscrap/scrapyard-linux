@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Overview
-description: What scrapyard-linux 0.10 ships, where it sits, how it registers, how devices are named, and which waits block or ride the loop.
+description: What scrapyard-linux 0.11 ships, where it sits, how it registers, how devices are named, and which waits block or ride the loop.
 tags: [overview, provider, stack, drivers]
 status: draft
 generated: { by: claude-opus-5-5/claude-code, at: "2026-09-25T23:00:00Z" }
@@ -23,7 +23,7 @@ ext-posi                      1:1 POSIX, ioctl, termios, gpiod syscalls
       → scrapyard-io/framework (gpio/*)    managers, transports, loop and via() machinery
 ```
 
-Requires `gpio/{contracts,digital,i2c,spi,uart,pwm,nuts-and-bolts}` ^0.10 — the splits, not the framework. `ext-posi` ^0.10 is a hard requirement even though PWM alone never touches it.
+Requires `gpio/{contracts,digital,i2c,spi,uart,pwm,nuts-and-bolts}` ^0.11 — the splits, not the framework. `ext-posi` ^0.11 is a hard requirement even though PWM alone never touches it.
 
 # Provider
 
